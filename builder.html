@@ -1,0 +1,380 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Link Encoder</title>
+
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      padding: 24px;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: #f5f5f5;
+      color: #222;
+    }
+
+    main {
+      width: 100%;
+      max-width: 720px;
+      margin: 0 auto;
+    }
+
+    h1 {
+      margin: 0 0 24px;
+      font-size: 24px;
+    }
+
+    h2 {
+      margin-top: 0;
+      font-size: 18px;
+    }
+
+    section {
+      background: white;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      padding: 20px;
+      margin-bottom: 20px;
+    }
+
+    .link-row {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 8px;
+    }
+
+    input,
+    textarea,
+    button {
+      font: inherit;
+    }
+
+    input,
+    textarea {
+      width: 100%;
+      padding: 10px 12px;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+      background: white;
+    }
+
+    textarea {
+      min-height: 110px;
+      resize: vertical;
+    }
+
+    button {
+      padding: 10px 14px;
+      border: 1px solid #aaa;
+      border-radius: 5px;
+      background: #fff;
+      cursor: pointer;
+    }
+
+    button:hover {
+      background: #f0f0f0;
+    }
+
+    button.primary {
+      background: #222;
+      color: white;
+      border-color: #222;
+    }
+
+    button.primary:hover {
+      background: #444;
+    }
+
+    button.remove {
+      flex: 0 0 auto;
+    }
+
+    .actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 12px;
+    }
+
+    label {
+      display: block;
+      margin-bottom: 6px;
+      font-weight: 600;
+    }
+
+    .output {
+      margin-top: 16px;
+    }
+
+    .message {
+      margin-top: 10px;
+      font-size: 14px;
+      color: #666;
+    }
+
+    .error {
+      color: #b00020;
+    }
+
+    @media (max-width: 600px) {
+      body {
+        padding: 12px;
+      }
+
+      section {
+        padding: 16px;
+      }
+
+      .link-row {
+        align-items: stretch;
+      }
+    }
+  </style>
+</head>
+
+<body>
+
+<main>
+  <h1>Link Encoder</h1>
+
+  <!-- ENCODE -->
+  <section>
+    <h2>Encode links</h2>
+
+    <div id="linksContainer"></div>
+
+    <div class="actions">
+      <button type="button" onclick="addLink()">Add link</button>
+      <button type="button" class="primary" onclick="encodeLinks()">
+        Generate code
+      </button>
+    </div>
+
+    <div class="output">
+      <label for="encodedOutput">Encoded code</label>
+      <textarea
+        id="encodedOutput"
+        readonly
+        placeholder="The Base64 code will appear here"
+      ></textarea>
+
+      <div class="actions">
+        <button type="button" onclick="copyEncoded()">
+          Copy
+        </button>
+      </div>
+
+      <div id="encodeMessage" class="message"></div>
+    </div>
+  </section>
+
+
+  <!-- DECODE -->
+  <section>
+    <h2>Decode code</h2>
+
+    <label for="encodedInput">Encoded code</label>
+    <textarea
+      id="encodedInput"
+      placeholder="Paste a Base64 code here"
+    >WyJodHRwczovL3dvcmtiZW5jaC5sZWlhLm92aC8%2FY29kZT1STUVXTzFYUkFLNzNVMllDNCZlbWFpbD1fdGVzdF9maXNlZSIsImh0dHBzOi8vd29ya2JlbmNoLmxlaWEub3ZoLz9jb2RlPVJNTTNYTTVDRDVETVJWWkVUJmVtYWlsPV90ZXN0X2Zpc2VlIl0%3D</textarea>
+
+    <div class="actions">
+      <button type="button" class="primary" onclick="decodeLinks()">
+        Decode
+      </button>
+    </div>
+
+    <div id="decodeMessage" class="message"></div>
+  </section>
+</main>
+
+
+<script>
+  const linksContainer = document.getElementById("linksContainer");
+
+
+  function addLink(value = "") {
+    const row = document.createElement("div");
+    row.className = "link-row";
+
+    const input = document.createElement("input");
+    input.type = "url";
+    input.placeholder = "https://example.com";
+    input.value = value;
+
+    const removeButton = document.createElement("button");
+    removeButton.type = "button";
+    removeButton.className = "remove";
+    removeButton.textContent = "Remove";
+
+    removeButton.addEventListener("click", () => {
+      row.remove();
+
+      if (!linksContainer.children.length) {
+        addLink();
+      }
+    });
+
+    row.appendChild(input);
+    row.appendChild(removeButton);
+
+    linksContainer.appendChild(row);
+  }
+
+
+  function getLinks() {
+    return [...linksContainer.querySelectorAll("input")]
+      .map(input => input.value.trim())
+      .filter(Boolean);
+  }
+
+
+  function stringToBase64(value) {
+    const bytes = new TextEncoder().encode(value);
+
+    let binary = "";
+
+    bytes.forEach(byte => {
+      binary += String.fromCharCode(byte);
+    });
+
+    return btoa(binary);
+  }
+
+
+  function base64ToString(value) {
+    const binary = atob(value);
+
+    const bytes = Uint8Array.from(
+      binary,
+      char => char.charCodeAt(0)
+    );
+
+    return new TextDecoder().decode(bytes);
+  }
+
+  function encodeLinks() {
+    const links = getLinks();
+
+    const message = document.getElementById("encodeMessage");
+    const output = document.getElementById("encodedOutput");
+
+    message.textContent = "";
+    message.className = "message";
+
+    if (!links.length) {
+      output.value = "";
+      message.textContent = "Please enter at least one link.";
+      message.className = "message error";
+      return;
+    }
+
+    const invalid = links.find(link => {
+      try {
+        const url = new URL(link);
+        return !["http:", "https:"].includes(url.protocol);
+      } catch {
+        return true;
+      }
+    });
+
+    if (invalid) {
+      output.value = "";
+      message.textContent = `Invalid URL: ${invalid}`;
+      message.className = "message error";
+      return;
+    }
+
+    const json = JSON.stringify(links);
+
+    // JSON -> Base64
+    const base64 = stringToBase64(json);
+
+    // Make Base64 safe for use inside a URL query parameter
+    const encoded = encodeURIComponent(base64);
+
+    output.value = encoded;
+
+    message.textContent =
+      `${links.length} link${links.length === 1 ? "" : "s"} encoded.`;
+  }
+
+
+  function decodeLinks() {
+    const input = document.getElementById("encodedInput").value.trim();
+    const message = document.getElementById("decodeMessage");
+
+    message.textContent = "";
+    message.className = "message";
+
+    if (!input) {
+      message.textContent = "Please enter a code.";
+      message.className = "message error";
+      return;
+    }
+
+    try {
+      /*
+        decodeURIComponent also allows pasting a code taken
+        directly from a URL query parameter.
+      */
+      const cleaned = decodeURIComponent(input);
+
+      const json = base64ToString(cleaned);
+      const links = JSON.parse(json);
+
+      if (!Array.isArray(links)) {
+        throw new Error("The decoded value is not a list.");
+      }
+
+      linksContainer.innerHTML = "";
+
+      links.forEach(link => addLink(String(link)));
+
+      if (!links.length) {
+        addLink();
+      }
+
+      message.textContent =
+        `${links.length} link${links.length === 1 ? "" : "s"} decoded.`;
+
+      window.scrollTo({
+        top: 0,
+        behavior: "smooth"
+      });
+
+    } catch (error) {
+      message.textContent = "Invalid encoded code.";
+      message.className = "message error";
+    }
+  }
+
+
+  async function copyEncoded() {
+    const output = document.getElementById("encodedOutput");
+
+    if (!output.value) {
+      return;
+    }
+
+    await navigator.clipboard.writeText(output.value);
+
+    const message = document.getElementById("encodeMessage");
+    message.textContent = "Copied to clipboard.";
+    message.className = "message";
+  }
+
+
+  // Initial fields
+  addLink();
+  addLink();
+</script>
+
+</body>
+</html>

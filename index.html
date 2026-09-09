@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-  <title>Your Random Link</title>
+  <title>Activity Link</title>
 
   <style>
     * {
@@ -238,7 +238,7 @@
 
   <main class="card">
 
-    <h1>Activity Link</h1>
+    <h1 id="title">Activity Link</h1>
 
     <p class="subtitle">
       Click below to continue.
@@ -290,8 +290,20 @@
         new URLSearchParams(window.location.search);
 
       const encoded =
-        params.get("links");
+        params.get("lks");
+  
+      const title =
+        params.get("title");
 
+      const titleElement =
+        document.getElementById("title");
+
+      if(title) {
+        titleElement.textContent = title;
+      } 
+
+      const dbg =
+        params.get("dbg");
 
       if (!encoded) {
         throw new Error("No links were provided.");
@@ -305,8 +317,11 @@
       const decoded =
         atob(encoded);
 
-      const links =
-        JSON.parse(decoded);
+      try {
+        links = JSON.parse(decoded);
+      } catch (error) {
+        throw new Error("Invalid link specification");
+      }
 
 
       if (
@@ -372,6 +387,10 @@
 
       const button =
         document.getElementById("openButton");
+
+      if(dbg == "true") {
+        console.log("validLinks:\n"+JSON.stringify(validLinks, null, 2));
+      } 
 
 
       linkBox.textContent =
